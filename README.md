@@ -1,1 +1,624 @@
-# dz0l.github.io
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Календарь рабочих смен</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background: #f8f9fa;
+        margin: 0;
+        padding: 8px;
+        font-size: 11.8px;
+    }
+    h1 {
+        text-align: center;
+        color: #1e3a8a;
+        margin: 5px 0 8px 0;
+        font-size: 18.5px;
+    }
+    .total-days {
+        color: #166534;
+        font-weight: bold;
+        margin-left: 12px;
+    }
+
+    .controls {
+        max-width: 1100px;
+        margin: 8px auto;
+        padding: 9px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        align-items: end;
+        justify-content: center;
+    }
+    input[type="date"] {
+        padding: 5px;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    button {
+        padding: 7px 14px;
+        font-size: 13px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .add-btn { background: #1e40af; color: white; }
+    .clear-btn { background: #ef4444; color: white; }
+
+    .calendar-grid {
+        max-width: 1180px;
+        margin: 10px auto;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+    }
+    .month {
+        background: white;
+        border-radius: 7px;
+        padding: 3px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+        font-size: 11.4px;
+    }
+    .month-header {
+        text-align: center;
+        background: #1e3a8a;
+        color: white;
+        padding: 3.5px;
+        border-radius: 5px 5px 0 0;
+        font-weight: bold;
+        font-size: 12px;
+        margin: -3px -3px 4px -3px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        text-align: center;
+        padding: 1px 1px;
+        border: 1px solid #e2e8f0;
+        height: 18px;
+        font-size: 11px;
+    }
+    th {
+        background: #e2e8f0;
+        font-size: 10.3px;
+    }
+
+    .color-0 { background: #60a5fa !important; color: #1e3a8a; font-weight: 600; }
+    .color-1 { background: #f87171 !important; color: #7f1d1d; font-weight: 600; }
+    .color-2 { background: #34d399 !important; color: #14532d; font-weight: 600; }
+    .color-3 { background: #a78bfa !important; color: #4c1d95; font-weight: 600; }
+    .color-4 { background: #fb923c !important; color: #9a3412; font-weight: 600; }
+    .color-5 { background: #38bdf8 !important; color: #0f172a; font-weight: 600; }
+    .color-6 { background: #f472b6 !important; color: #831843; font-weight: 600; }
+    .color-7 { background: #fde68a !important; color: #92400e; font-weight: 600; }
+    .color-8 { background: #84cc16 !important; color: #365314; font-weight: 600; }
+    .color-9 { background: #8b5cf6 !important; color: #312e81; font-weight: 600; }
+
+    .legend-color {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1px solid rgba(15, 23, 42, 0.15);
+        margin-right: 6px;
+    }
+
+    .bulk-panel {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        padding: 16px;
+    }
+
+    .bulk-panel.active {
+        display: flex;
+    }
+
+    .bulk-box {
+        width: min(100%, 640px);
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 25px 50px rgba(15, 23, 42, 0.25);
+        padding: 16px;
+    }
+
+    .bulk-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 10px;
+    }
+
+    .close-modal {
+        border: none;
+        background: transparent;
+        font-size: 20px;
+        cursor: pointer;
+        color: #1f2937;
+    }
+
+    .bulk-box p {
+        margin: 0 0 10px 0;
+        font-size: 12px;
+        color: #334155;
+    }
+
+    .bulk-box textarea {
+        width: 100%;
+        min-height: 180px;
+        padding: 10px;
+        font-size: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .bulk-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 12px;
+    }
+
+    .legend {
+        max-width: 1100px;
+        margin: 8px auto;
+        padding: 10px;
+        background: white;
+        border-radius: 10px;
+        font-size: 12.6px;
+        line-height: 1.32;
+    }
+    .legend-content {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px 18px;
+    }
+    .shift-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 6px;
+        margin: 1px 0;
+        border-radius: 6px;
+        background: #f8fafc;
+    }
+    .shift-info {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .delete-btn {
+        color: #ef4444;
+        background: none;
+        border: none;
+        font-size: 15.5px;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 0 3px;
+    }
+
+    @media print {
+        body { background: white; padding: 3mm; font-size: 11px; }
+        .controls, button { display: none !important; }
+        .calendar-grid { gap: 3px; margin: 5px auto; }
+        .month { box-shadow: none; border: 1px solid #ddd; }
+        h1 { margin: 3px 0 6px 0; font-size: 17px; }
+        .legend { margin: 5px auto; padding: 7px; }
+        .bulk-panel { display: none !important; }
+    }
+</style>
+</head>
+<body>
+
+<h1 id="title">Календарь рабочих смен</h1>
+
+<div class="controls">
+    <div>
+        <strong>Начало:</strong><br>
+        <input type="date" id="startDate">
+    </div>
+    <div>
+        <strong>Конец:</strong><br>
+        <input type="date" id="endDate">
+    </div>
+    <div>
+        <button class="add-btn" onclick="addShift()">+ Добавить смену</button>
+    </div>
+    <div>
+        <button class="add-btn" onclick="exportShifts()">Экспорт JSON</button>
+    </div>
+    <div>
+        <button class="add-btn" onclick="triggerImport()">Импорт JSON</button>
+        <input type="file" id="fileInput" accept="application/json" style="display:none" onchange="handleImportFile(event)">
+    </div>
+    <div>
+        <button class="add-btn" onclick="openBulkInput()">Массовый ввод</button>
+    </div>
+    <div>
+        <button class="clear-btn" onclick="clearAll()">Очистить всё</button>
+    </div>
+</div>
+
+<div id="bulkPanel" class="bulk-panel">
+    <div class="bulk-box">
+        <div class="bulk-header">
+            <strong>Массовый ввод смен</strong>
+            <button class="close-modal" onclick="closeBulkInput()">×</button>
+        </div>
+        <p>Вставьте строки в формате <code>DD.MM.YYYY-DD.MM.YYYY</code>. Всё, что идёт после второго диапазона, игнорируется.</p>
+        <textarea id="bulkInput" placeholder="01.01.2026-04.01.2026 - 4 дня\n08.02.2026-13.02.2026 - 6 дней"></textarea>
+        <div class="bulk-actions">
+            <button class="add-btn" onclick="importBulkText()">Импортировать</button>
+            <button class="clear-btn" onclick="closeBulkInput()">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<div id="calendarContainer" class="calendar-grid"></div>
+
+<div class="legend" id="legend">
+    <strong>Смены:</strong>
+    <div class="legend-content" id="shiftsContainer"></div>
+</div>
+
+<script>
+let shifts = [];
+let titleYearEnabled = false;
+const colors = [
+    { class:'color-0', bg:'#60a5fa', text:'#1e3a8a' },
+    { class:'color-1', bg:'#f87171', text:'#7f1d1d' },
+    { class:'color-2', bg:'#34d399', text:'#14532d' },
+    { class:'color-3', bg:'#a78bfa', text:'#4c1d95' },
+    { class:'color-4', bg:'#fb923c', text:'#9a3412' },
+    { class:'color-5', bg:'#38bdf8', text:'#0f172a' },
+    { class:'color-6', bg:'#f472b6', text:'#831843' },
+    { class:'color-7', bg:'#fde68a', text:'#92400e' },
+    { class:'color-8', bg:'#84cc16', text:'#365314' },
+    { class:'color-9', bg:'#8b5cf6', text:'#312e81' }
+];
+
+function formatDate(date) {
+    return date.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+
+function pluralDays(n) {
+    if (n % 10 === 1 && n % 100 !== 11) return "день";
+    if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return "дня";
+    return "дней";
+}
+
+function countDays(start, end) {
+    const diffTime = Math.abs(end - start);
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function getTotalDays() {
+    let total = 0;
+    shifts.forEach(shift => total += countDays(shift.start, shift.end));
+    return total;
+}
+
+function getCurrentYear() {
+    if (shifts.length === 0) return new Date().getFullYear();
+    
+    let minYear = Infinity;
+    shifts.forEach(s => {
+        minYear = Math.min(minYear, s.start.getFullYear());
+    });
+    return minYear;
+}
+
+function normalizeDate(d) {
+    const nd = new Date(d);
+    nd.setHours(0, 0, 0, 0);
+    return nd;
+}
+
+function addShift() {
+    const startStr = document.getElementById('startDate').value;
+    const endStr = document.getElementById('endDate').value;
+    
+    if (!startStr || !endStr) {
+        alert('Выберите даты начала и конца смены');
+        return;
+    }
+
+    let start = normalizeDate(startStr);
+    let end = normalizeDate(endStr);
+    end.setHours(23, 59, 59, 999);
+
+    if (start > end) {
+        alert('Дата начала должна быть раньше или равна концу');
+        return;
+    }
+
+    shifts.push({start, end});
+    generateCalendar();
+}
+
+function removeShift(index) {
+    shifts.splice(index, 1);
+    generateCalendar();
+}
+
+function exportShifts() {
+    if (shifts.length === 0) {
+        alert('Нет смен для экспорта');
+        return;
+    }
+
+    const exportData = shifts.map(shift => ({
+        start: shift.start.toISOString().split('T')[0],
+        end: shift.end.toISOString().split('T')[0]
+    }));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'shifts.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function triggerImport() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fileInput').click();
+}
+
+function openBulkInput() {
+    document.getElementById('bulkInput').value = '';
+    document.getElementById('bulkPanel').classList.add('active');
+    setTimeout(() => document.getElementById('bulkInput').focus(), 0);
+}
+
+function closeBulkInput() {
+    document.getElementById('bulkPanel').classList.remove('active');
+}
+
+function parseDMYDate(text) {
+    const [day, month, year] = text.split('.');
+    return new Date(Number(year), Number(month) - 1, Number(day));
+}
+
+function importBulkText() {
+    const raw = document.getElementById('bulkInput').value.trim();
+    if (!raw) {
+        alert('Вставьте данные смен для импорта.');
+        return;
+    }
+
+    const lines = raw.split(/\r?\n/);
+    const imported = [];
+    const errors = [];
+
+    lines.forEach((line, index) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const match = trimmed.match(/(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/);
+        if (!match) {
+            errors.push(index + 1);
+            return;
+        }
+
+        const start = normalizeDate(parseDMYDate(match[1]));
+        const end = normalizeDate(parseDMYDate(match[2]));
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            errors.push(index + 1);
+            return;
+        }
+        end.setHours(23, 59, 59, 999);
+
+        if (start > end) {
+            errors.push(index + 1);
+            return;
+        }
+
+        imported.push({ start, end });
+    });
+
+    if (imported.length === 0) {
+        alert('Не удалось импортировать ни одной строки. Проверьте формат данных.');
+        return;
+    }
+
+    shifts = shifts.concat(imported);
+    titleYearEnabled = shifts.length > 0;
+    generateCalendar();
+    closeBulkInput();
+
+    if (errors.length > 0) {
+        alert('Некоторые строки не были импортированы: строки ' + errors.join(', '));
+    }
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const data = JSON.parse(reader.result);
+            if (!Array.isArray(data)) throw new Error('Формат должен быть массивом');
+
+            const imported = data.map(item => {
+                if (!item.start || !item.end) throw new Error('Каждый объект должен содержать start и end');
+                const start = normalizeDate(item.start);
+                const end = normalizeDate(item.end);
+                end.setHours(23, 59, 59, 999);
+                if (start > end) throw new Error('Некорректный диапазон даты');
+                return { start, end };
+            });
+
+            shifts = imported;
+            titleYearEnabled = imported.length > 0;
+            generateCalendar();
+        } catch (error) {
+            alert('Ошибка импорта JSON: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+function clearAll() {
+    if (confirm('Очистить все смены?')) {
+        shifts = [];
+        generateCalendar();
+    }
+}
+
+function getShiftColor(i) {
+    return colors[i % colors.length];
+}
+
+function getSelectedYear() {
+    const startValue = document.getElementById('startDate').value;
+    const endValue = document.getElementById('endDate').value;
+    if (startValue) return new Date(startValue).getFullYear();
+    if (endValue) return new Date(endValue).getFullYear();
+    return new Date().getFullYear();
+}
+
+function updateTitle(year) {
+    let title = 'Календарь рабочих смен';
+    if (shifts.length > 0) {
+        const total = getTotalDays();
+        title += ` ${year} <span class="total-days">(${total} ${pluralDays(total)})</span>`;
+    } else if (titleYearEnabled && year) {
+        title += ` ${year}`;
+    }
+    document.getElementById('title').innerHTML = title;
+}
+
+function setupDateTitleUpdate() {
+    const startInput = document.getElementById('startDate');
+    const endInput = document.getElementById('endDate');
+
+    const update = () => {
+        if (!titleYearEnabled) titleYearEnabled = true;
+        generateCalendar();
+    };
+
+    startInput.addEventListener('input', update);
+    endInput.addEventListener('input', update);
+}
+
+function generateCalendar() {
+    const year = shifts.length > 0 ? getCurrentYear() : getSelectedYear();
+    updateTitle(year);
+    
+    const container = document.getElementById('calendarContainer');
+    container.innerHTML = '';
+
+    const shiftsContainer = document.getElementById('shiftsContainer');
+    shiftsContainer.innerHTML = '';
+
+    shifts.forEach((shift, i) => {
+        const days = countDays(shift.start, shift.end);
+        const color = getShiftColor(i);
+        const div = document.createElement('div');
+        div.className = 'shift-item';
+        div.innerHTML = `
+            <div class="shift-info">
+                <span class="legend-color ${color.class}"></span>
+                <strong>${formatDate(shift.start)} — ${formatDate(shift.end)}</strong> (${days} ${pluralDays(days)})
+            </div>
+            <button class="delete-btn" onclick="removeShift(${i})">×</button>
+        `;
+        shiftsContainer.appendChild(div);
+    });
+
+    const monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+
+    for (let m = 0; m < 12; m++) {
+        const monthDiv = document.createElement('div');
+        monthDiv.className = 'month';
+        
+        const firstDay = new Date(year, m, 1);
+        const lastDay = new Date(year, m + 1, 0);
+        const startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+        let html = `
+            <div class="month-header">${monthNames[m]} ${year}</div>
+            <table>
+                <tr><th>ПН</th><th>ВТ</th><th>СР</th><th>ЧТ</th><th>ПТ</th><th>СБ</th><th>ВС</th></tr>
+                <tr>`;
+
+        for (let i = 0; i < startDayOfWeek; i++) html += '<td></td>';
+
+        let day = 1;
+        let cell = startDayOfWeek;
+
+        while (day <= lastDay.getDate()) {
+            if (cell % 7 === 0 && cell !== 0) html += '</tr><tr>';
+            
+            const current = normalizeDate(new Date(year, m, day));
+            let cellClass = '';
+
+            for (let i = 0; i < shifts.length; i++) {
+                const s = shifts[i];
+                if (current >= s.start && current <= s.end) {
+                    cellClass = getShiftColor(i).class;
+                    break;
+                }
+            }
+
+            html += `<td class="${cellClass}">${day}</td>`;
+            day++;
+            cell++;
+        }
+
+        while (cell % 7 !== 0) {
+            html += '<td></td>';
+            cell++;
+        }
+
+        html += '</tr></table>';
+        monthDiv.innerHTML = html;
+        container.appendChild(monthDiv);
+    }
+}
+
+// Обработка Enter
+function setupEnterKey() {
+    const startInput = document.getElementById('startDate');
+    const endInput = document.getElementById('endDate');
+
+    startInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addShift(); });
+    endInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addShift(); });
+}
+
+// Инициализация
+const today = new Date();
+document.getElementById('startDate').value = today.toISOString().split('T')[0];
+document.getElementById('endDate').value = new Date(today.getTime() + 7*86400000).toISOString().split('T')[0];
+
+window.onload = () => {
+    setupEnterKey();
+    setupDateTitleUpdate();
+    generateCalendar();
+};
+</script>
+
+</body>
+</html>
